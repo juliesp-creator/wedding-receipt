@@ -376,8 +376,24 @@ header .sub { color: var(--ink2); letter-spacing: .06em; }
 .btn.tiny { width: auto; padding: 4px 10px; font-size: 10px; margin-top: 8px; }
 
 /* 사진 스크랩 (오른쪽 아래) ---------------------------------------------- */
+.scrap-dock { position: fixed; right: 12px; bottom: 12px; z-index: 60; width: 100px; height: 126px; transition: transform .38s cubic-bezier(.4, 0, .2, 1); }
+.scrap-dock.folded { transform: translateX(calc(100% - 4px)); }
+.fold-btn {
+  position: absolute; left: -22px; top: 38px; width: 26px; height: 44px; z-index: 5; padding: 0 0 0 2px; cursor: pointer;
+  border: 1px solid rgba(80, 86, 94, .35); border-right: none; border-radius: 8px 0 0 8px; background: linear-gradient(#f3f1ea, #e2ded2);
+  color: #6b645a; font-family: inherit; font-size: 15px; line-height: 1; box-shadow: -2px 3px 6px rgba(20, 30, 50, .25);
+}
+.scrap-dock.folded .fold-btn { color: var(--accent-d); font-size: 14px; }
+.month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0 6px; }
+.month-grid button {
+  font-family: inherit; font-size: 13px; padding: 12px 0; border: 1px solid var(--ink3); background: transparent; color: var(--ink); cursor: pointer;
+}
+.month-grid button:active { background: var(--accent-d); color: var(--paper); }
+.month-grid button.now { border-color: var(--accent-d); color: var(--accent-d); font-weight: 700; }
+.month-year { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 12px; font-size: 16px; font-weight: 700; letter-spacing: .08em; }
+.month-year button { font-family: inherit; font-size: 18px; border: none; background: none; cursor: pointer; color: var(--ink2); padding: 4px 10px; }
 .scrap {
-  position: fixed; right: 12px; bottom: 12px; z-index: 60; width: 100px; height: 126px; padding: 0; border: none; background: none;
+  position: absolute; inset: 0; padding: 0; border: none; background: none;
   cursor: pointer; transform: rotate(5deg); transform-origin: 70% 90%; transition: transform .25s cubic-bezier(.3, 1.5, .5, 1);
   filter: drop-shadow(0 6px 7px rgba(20, 30, 50, .3)); -webkit-tap-highlight-color: transparent; font-family: inherit;
   animation: scrapIn .6s 2.9s backwards;
@@ -394,8 +410,8 @@ header .sub { color: var(--ink2); letter-spacing: .06em; }
   border: 1.5px dashed #a79f8e; color: #7d7668; font-size: 30px; font-weight: 700; line-height: 1;
 }
 .scrap-photo.has { border: 3px solid #f7f5ef; box-shadow: 0 1px 2px rgba(0,0,0,.35); filter: sepia(.2) contrast(.96) saturate(.92); }
-.scrap-cap { position: absolute; left: 0; right: 0; bottom: 11px; text-align: center; font-size: 7.5px; letter-spacing: .26em; color: #6b645a; font-weight: 700; }
-.scrap-cap::before { content: ''; display: block; height: 1px; margin: 0 16px 5px; background: repeating-linear-gradient(90deg, #7d7668 0 4px, transparent 4px 7px); }
+.scrap-cap { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 13px; line-height: 1; letter-spacing: 0; color: var(--accent-d); }
+.scrap-cap::before { content: ''; display: block; height: 1px; margin: 0 16px 6px; background: repeating-linear-gradient(90deg, #7d7668 0 4px, transparent 4px 7px); }
 .clip { position: absolute; left: 4px; top: -8px; width: 22px; height: 48px; z-index: 3; transform: rotate(-9deg); filter: drop-shadow(1px 3px 1.5px rgba(0, 0, 0, .35)); }
 
 /* 사진 크게 보기 ------------------------------------------------------- */
@@ -693,10 +709,11 @@ header .sub { color: var(--ink2); letter-spacing: .06em; }
 </div>
 
 <!-- 사진 스크랩 -->
+<div class="scrap-dock" id="scrapDock"><button class="fold-btn" id="foldBtn" onclick="WRFold()" aria-label="접기/펴기">›</button>
 <button class="scrap" id="scrap" onclick="WRScrapClick()" aria-label="사진">
   <svg class="clip"><use href="#paperclip"/></svg>
-  <span class="scrap-paper"><span class="scrap-photo" id="scrapPhoto">+</span><span class="scrap-cap">MEMORY</span></span>
-</button>
+  <span class="scrap-paper"><span class="scrap-photo" id="scrapPhoto">+</span><span class="scrap-cap">♥︎</span></span>
+</button></div>
 <input type="file" id="photoFile" accept="image/*" style="display:none">
 <div class="lb" id="lb" onclick="if(event.target===this)WRLbClose()">
   <div class="lb-card">
@@ -1621,7 +1638,7 @@ function renderUnified() {
       html += '<div class="u-row" id="u-' + c._i + '"><div class="u-top">' +
         '<span class="u-name" onclick="document.getElementById(\'u-' + c._i + '\').classList.toggle(\'open\')"><span class="caret">▸</span>' + nm + '</span>' +
         '<span class="u-amt">' + fmt(c.budget) + '원</span>' +
-        '<label class="u-pick" style="margin:0">📅 예정월<input type="month" onclick="try{this.showPicker()}catch(e){}" onchange="WRPickDue(\'' + nm + '\', this.value)"></label>' +
+        '<button class="u-pick" type="button" style="margin:0;background:none;font-family:inherit" onclick="WRMonthPick(\'' + nm + '\')">📅 예정월</button>' +
         '</div><div class="u-detail">' + catBlockHtml(c) + '</div></div>';
     });
     html += '</div>';
@@ -2107,6 +2124,43 @@ load();
       .withFailureHandler(function (e) { alert('ERROR: ' + e.message); }).setCategoryDueMonth(name, val);
   };
   window.WRClearDue = function () { var i = $('dueMonthInput'); if (i) i.value = ''; };
+
+  // ── 예정월 월 선택 (달력 격자) ──
+  var mpName = '', mpYear = 0;
+  function ensureMonthModal() {
+    if ($('monthModal')) return;
+    var d = document.createElement('div'); d.className = 'modal-overlay'; d.id = 'monthModal';
+    d.innerHTML = '<div class="modal"><div class="modal-head"><div class="modal-title" id="mpTitle">예정월 선택</div>' +
+      '<button class="modal-close" onclick="closeModal(\'monthModal\')">CLOSE ✕</button></div>' +
+      '<div class="month-year"><button onclick="WRMonthYear(-1)">‹</button><span id="mpYear"></span><button onclick="WRMonthYear(1)">›</button></div>' +
+      '<div class="month-grid" id="mpGrid"></div></div>';
+    d.addEventListener('click', function (e) { if (e.target === d) closeModal('monthModal'); });
+    document.body.appendChild(d);
+  }
+  function paintMonths() {
+    $('mpYear').textContent = mpYear;
+    var now = new Date(), nk = now.getFullYear() * 12 + now.getMonth(), h = '';
+    for (var m = 1; m <= 12; m++) h += '<button type="button" class="' + (mpYear * 12 + m - 1 === nk ? 'now' : '') + '" onclick="WRMonthSet(' + m + ')">' + m + '월</button>';
+    $('mpGrid').innerHTML = h;
+  }
+  window.WRMonthPick = function (name) {
+    ensureMonthModal(); mpName = name;
+    var w = STATE && STATE.summary && STATE.summary.weddingDate, y = new Date().getFullYear();
+    if (w && Number(w.slice(0, 4)) >= y) y = Number(w.slice(0, 4));
+    mpYear = y; $('mpTitle').textContent = name + ' · 예정월'; paintMonths(); openModal('monthModal');
+  };
+  window.WRMonthYear = function (d) { mpYear += d; paintMonths(); };
+  window.WRMonthSet = function (m) { closeModal('monthModal'); window.WRPickDue(mpName, mpYear + '-' + ('0' + m).slice(-2)); };
+
+  // ── 스크랩 접기/펴기 ──
+  var FKEY = 'weddingReceiptScrapFold.v1', dock = $('scrapDock'), fb = $('foldBtn');
+  function paintFold(f) { if (!dock) return; dock.classList.toggle('folded', f); fb.textContent = f ? '♥︎' : '›'; }
+  var folded = false; try { folded = localStorage.getItem(FKEY) === '1'; } catch (e) {}
+  paintFold(folded);
+  window.WRFold = function () {
+    folded = !folded; paintFold(folded);
+    try { localStorage.setItem(FKEY, folded ? '1' : '0'); } catch (e) {}
+  };
 
   // ── 사진 스크랩 ──
   var PKEY = 'weddingReceiptPhoto.v1', MEMP = null;
