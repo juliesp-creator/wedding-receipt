@@ -210,12 +210,6 @@
   .modal-title { font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
   .modal-close { background: none; border: none; font-size: 18px; color: var(--ink3); cursor: pointer; font-family: inherit; }
 
-  .sim-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted var(--line); font-size: 12px; }
-  .sim-row:last-child { border-bottom: none; }
-  .sim-name { font-weight: 700; }
-  .sim-change { font-size: 10.5px; }
-  .sim-change.cut { color: var(--warn); }
-  .sim-warn { border: 1px dashed var(--warn); color: var(--warn); padding: 10px; font-size: 11px; margin-top: 10px; }
 
   .loading { text-align: center; padding: 40px 0; color: var(--ink3); font-size: 12px; letter-spacing: .05em; }
 
@@ -283,7 +277,7 @@
       <span class="tag-no" id="tagLogCount">0000</span>
     </button>
     <br>
-    <a class="sheet-link" href="#" onclick="openSettings(); return false;">⚙ 설정 · 백업</a>
+    <a class="sheet-link" href="#" onclick="openSettings(); return false;">⚙ 설정</a>
   </header>
 
   <div class="perf"></div>
@@ -341,22 +335,6 @@
   </div>
 </div>
 
-<!-- 시뮬레이터 모달 -->
-<div class="modal-overlay" id="simModal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">예산 재조정 시뮬레이션</div>
-      <button class="modal-close" onclick="closeModal('simModal')">CLOSE ✕</button>
-    </div>
-    <label>어느 항목에서</label>
-    <select id="simCategory"></select>
-    <label>예산보다 얼마나 더 쓸까요? (원)</label>
-    <input type="number" id="simExtra" placeholder="2000000" inputmode="numeric">
-    <button class="btn outline" onclick="runSimulation()">계산하기</button>
-    <div class="sim-result" id="simResult"></div>
-  </div>
-</div>
-
 <!-- 예정월 설정 모달 -->
 <div class="modal-overlay" id="dueModal">
   <div class="modal">
@@ -398,8 +376,24 @@
     </div>
     <label>항목 이름</label>
     <input type="text" id="newCatName" placeholder="예: 촬영 스냅">
-    <label>예산(원)</label>
+    <label>결제일 (아직 모르면 비워두세요)</label>
+    <input type="date" id="newCatDate" onchange="onNewCatDate()">
+    <label id="newCatBudgetLabel">예산(원)</label>
     <input type="number" id="newCatBudget" placeholder="200000" inputmode="numeric">
+    <div id="newCatPay" style="display:none">
+      <label>결제수단</label>
+      <select id="newCatMethod" onchange="onNewCatMethod()">
+        <option value="현금">현금 · 계좌이체</option>
+        <option value="카드">카드</option>
+      </select>
+      <div id="newCatCard" style="display:none">
+        <label>카드 청구일 (돈이 실제로 빠지는 날)</label>
+        <input type="date" id="newCatBilling" oninput="newCatBillingTouched = true">
+        <label>할부 개월 (일시불은 1)</label>
+        <input type="number" id="newCatInst" value="1" min="1" max="36" inputmode="numeric">
+      </div>
+      <div class="cat-memo">결제일과 금액을 넣으면 항목과 결제가 한 번에 만들어지고, 월별 리스트의 그 달에 바로 들어가요.</div>
+    </div>
     <label>고정 / 조정가능</label>
     <select id="newCatAdjustable">
       <option value="true">조정가능 (ADJ)</option>
@@ -407,8 +401,10 @@
     </select>
     <label>메모 (선택)</label>
     <input type="text" id="newCatMemo" placeholder="예: 계약금 30만원 + 잔금 60만원">
-    <label>예정월 (예: 2027-10) — 넣으면 월별 리스트의 그 달에 들어가요</label>
-    <input type="text" id="newCatDueMonth" placeholder="2027-10">
+    <div id="newCatDueRow">
+      <label>예정월 (결제일을 모를 때만, 예: 2027-10)</label>
+      <input type="text" id="newCatDueMonth" placeholder="2027-10">
+    </div>
     <button class="btn" onclick="submitAddCategory()">＋ 추가하기</button>
     <div class="form-msg" id="addCatMsg"></div>
   </div>
@@ -429,18 +425,15 @@
     <input type="number" id="onbCutoff" value="31" min="1" max="31" inputmode="numeric">
     <div class="cat-memo">카드사 앱의 "결제일별 이용기간"을 보고 맞춰 주세요. 나중에 설정에서 바꿀 수 있어요.</div>
     <button class="btn" onclick="startOnb('empty')">▸ 기본 항목으로 시작</button>
-    <button class="btn outline" onclick="startOnb('sample')">▸ 샘플 데이터로 체험</button>
-    <button class="btn outline" onclick="document.getElementById('importFile2').click()">⇧ 이전 백업 파일 불러오기</button>
-    <input type="file" id="importFile2" accept=".json,application/json" style="display:none" onchange="importFileUI(this)">
     <div class="form-msg" id="onbMsg"></div>
   </div>
 </div>
 
-<!-- 설정 · 백업 -->
+<!-- 설정 -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title">설정 · 백업</div>
+      <div class="modal-title">설정</div>
       <button class="modal-close" onclick="closeModal('settingsModal')">CLOSE ✕</button>
     </div>
     <label>목표 총예산(원) — 0이면 항목 합계를 그대로 써요</label>
@@ -456,12 +449,9 @@
     <button class="btn" onclick="saveSettingsUI()">✎ 저장하기</button>
     <div class="form-msg" id="setMsg"></div>
     <hr class="dash">
-    <div class="section-label">BACKUP</div>
-    <div class="cat-memo">데이터는 이 기기의 브라우저에만 있어요. 기기를 바꾸거나 브라우저 데이터를 지우기 전에 백업 파일을 받아 두세요.</div>
-    <button class="btn outline" onclick="downloadJson()">⇩ 백업 파일(JSON) 받기</button>
+    <div class="section-label">DATA</div>
+    <div class="cat-memo">데이터는 이 기기의 브라우저에만 있어요. 기기를 바꾸거나 브라우저 데이터를 지우면 옮겨지지 않으니, 필요하면 CSV로 내보내 보관하세요.</div>
     <button class="btn outline" onclick="downloadCsv()">⇩ 엑셀용 CSV 받기</button>
-    <button class="btn outline" onclick="document.getElementById('importFile').click()">⇧ 백업 파일 불러오기</button>
-    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importFileUI(this)">
     <button class="btn outline" onclick="resetAllUI()" style="border-color:var(--warn);color:var(--warn)">모든 데이터 지우기</button>
   </div>
 </div>
@@ -539,23 +529,6 @@ function newState(opts) {
   return st;
 }
 function clampInt(v, lo, hi, dflt) { var n = parseInt(v, 10); return isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; }
-
-function addSampleLogs(st) {
-  var t = todayStr();
-  var mk = function (off, cat, amount, memo, method, inst) {
-    var d = addDays(t, off);
-    st.logs.push({ id: uid(), date: d, category: cat, amount: amount, payer: '나', memo: memo, method: method,
-      billingDate: method === '카드' ? nextBilling(st.settings, d) : '', installments: inst || 1 });
-  };
-  mk(-25, '예식장(홀+식대)', 3000000, '예식장 계약금', '현금');
-  mk(-10, '스드메(스튜디오·드레스·메이크업)', 1200000, '스드메 계약금', '카드');
-  mk(20, '청첩장·답례품', 150000, '청첩장', '카드');
-  mk(60, '예복·예물', 1200000, '예복 구매 (3개월 할부)', '카드', 3);
-  mk(120, '신혼여행', 2400000, '항공권', '카드');
-  mk(150, '스드메(스튜디오·드레스·메이크업)', 2000000, '드레스 잔금', '현금');
-  mk(280, '예식장(홀+식대)', 8000000, '예식장 잔금', '현금');
-  st.logs.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
-}
 
 // 카드 청구일: 마감일(cutoffDay)까지의 이용분이 그 달 명세서, 결제일(payDay)은 마감 후 처음 오는 날
 function nextBilling(settings, dateStr) {
@@ -768,6 +741,15 @@ function parseSegment(seg, ctx) {
   if (isCat && /(추가|만들|새로)/.test(t2) && !wantsDel) {
     var nm = cStrip(t2.replace(/항목.*$/, '').replace(/(새로|새|추가|만들어|만들|해줘|줘)/g, ' ')).trim();
     if (!nm) { out.ask = '새 항목의 이름을 알려 주세요. 예) 리본 장식 항목 추가 5만원'; return out; }
+    nm = cStrip(nm.replace(/\d+\s*개월\s*할부/g, ' ').replace(/(현금|카드|일시불|할부)/g, ' ')).trim();
+    if (am && dt) {
+      var mC = method || '카드';
+      out.actions.push({ type: 'add_category', name: nm, budget: 0, dueMonth: '', label: '항목 추가: ' + nm });
+      out.actions.push({ type: 'add_expense', date: dt.date, category: nm, amount: am.value, memo: nm, method: mC, installments: mC === '카드' && instM ? Number(instM[1]) : 1,
+        label: '결제 추가: ' + nm + ' · ' + dt.date + ' · ' + won(am.value) + ' · ' + mC });
+      if (!method) out.notes.push('결제수단을 말씀하지 않아 카드로 가정했어요. 현금이면 "현금"을 같이 적어 주세요.');
+      return out;
+    }
     out.actions.push({ type: 'add_category', name: nm, budget: am ? am.value : 0, dueMonth: dt ? dt.date.slice(0, 7) : '',
       label: '항목 추가: ' + nm + (am ? ' (예산 ' + won(am.value) + ')' : '') + (dt ? ' · 예정월 ' + dt.date.slice(0, 7) : '') });
     return out;
@@ -790,7 +772,7 @@ function parseSegment(seg, ctx) {
     return out;
   }
   // 일시불 / N개월 할부
-  if (lump || instM) {
+  if ((lump || instM) && !(am && dt && addVerb)) {
     if (!ent || !ent.rows.length) { out.ask = '어떤 결제인지 못 찾았어요 (' + t2.trim() + ').'; return out; }
     if (dateMiss(ent.rows, dt)) { out.ask = dt.date + '에 해당하는 결제가 없어요. 후보: ' + ent.rows.map(rowLabel).join(', '); return out; }
     var nIns = lump ? 1 : Number(instM[1]);
@@ -818,7 +800,7 @@ function parseSegment(seg, ctx) {
     if (!cat) { for (var i = 0; i < ctx.categories.length; i++) { var h = cNorm(cStrip(ctx.categories[i])); if (h.length >= 2 && n.indexOf(h) !== -1) { cat = ctx.categories[i]; break; } } }
     if (!cat) { out.ask = '어느 항목에 넣을까요? (' + ctx.categories.slice(0, 5).join(', ') + ' …)'; return out; }
     var memo = (ent && ent.rows.length) ? cStrip(ent.rows[0].memo)
-      : cStrip(t2.replace(/(추가|넣어줘|넣어|등록|입력|잡아줘|잡아|새로|해줘|줘|결제|으로|로|현금|카드|일시불)/g, ' ')).trim();
+      : cStrip(t2.replace(/\d+\s*개월\s*할부/g, ' ').replace(/(추가|넣어줘|넣어|등록|입력|잡아줘|잡아|새로|해줘|줘|결제|으로|로|현금|카드|일시불|할부)/g, ' ')).trim();
     if (!memo) memo = cStrip(cat);
     var m5 = method || '카드', inst5 = instM ? Number(instM[1]) : 1;
     out.actions.push({ type: 'add_expense', date: dt.date, category: cat, amount: am.value, memo: memo, method: m5, installments: m5 === '카드' ? inst5 : 1,
@@ -967,7 +949,16 @@ var API = {
     var name = String((e && e.name) || '').trim();
     if (!name) throw new Error('항목 이름을 입력해주세요.');
     if (S.categories.some(function (x) { return x.name === name; })) throw new Error('이미 같은 이름의 항목이 있습니다.');
-    S.categories.push({ name: name, planned: Number(e.budget) || 0, adjustable: e.adjustable !== false, memo: e.memo || '', dueMonth: String(e.dueMonth || '').trim() });
+    var hasPay = validDate(e.payDate) && Number(e.payAmount) > 0;
+    S.categories.push({ name: name, planned: hasPay ? 0 : Number(e.budget) || 0, adjustable: e.adjustable !== false, memo: e.memo || '',
+      dueMonth: hasPay ? e.payDate.slice(0, 7) : String(e.dueMonth || '').trim() });
+    if (hasPay) {
+      var card = e.payMethod && e.payMethod !== '현금';
+      S.logs.push({ id: uid(), date: e.payDate, category: name, amount: Number(e.payAmount), payer: '나', memo: e.payMemo || name,
+        method: card ? '카드' : '현금', billingDate: card ? (validDate(e.payBilling) ? e.payBilling : nextBilling(S.settings, e.payDate)) : '',
+        installments: card ? Math.max(1, Math.min(36, parseInt(e.payInst, 10) || 1)) : 1 });
+      S.logs.sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; });
+    }
     saveState(); return view();
   },
   deleteCategory: function (name) { S.categories = S.categories.filter(function (x) { return x.name !== name; }); saveState(); return view(); },
@@ -1021,31 +1012,14 @@ var API = {
   },
   startOnboarding: function (o) {
     S = newState(o);
-    if (o.mode === 'sample') {
-      if (!S.settings.cap) S.settings.cap = 40000000;
-      S.categories.forEach(function (c, i) { var r = DEFAULT_CATEGORIES[i][1]; c.planned = Math.round(S.settings.cap * r / 10000) * 10000; });
-      if (!S.settings.weddingDate) S.settings.weddingDate = addDays(todayStr(), 300);
-      addSampleLogs(S);
-    }
     saveState(); return view();
   },
-  exportData: function () { return JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), settings: S.settings, categories: S.categories, logs: S.logs }, null, 2); },
   exportCsv: function () {
     var rows = [['결제일', '항목', '금액', '결제수단', '청구일', '할부개월', '결제자', '메모']];
     S.logs.forEach(function (l) { rows.push([l.date, l.category, l.amount, l.method, l.billingDate || '', l.installments || 1, l.payer || '', l.memo || '']); });
     return '﻿' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
   },
-  importData: function (text) {
-    var o;
-    try { o = JSON.parse(text); } catch (e) { throw new Error('파일을 읽을 수 없어요. 내보내기로 만든 JSON 파일인지 확인해 주세요.'); }
-    if (!o || !o.settings || !Array.isArray(o.categories) || !Array.isArray(o.logs)) throw new Error('형식이 맞지 않아요.');
-    var st = { v: 1, settings: o.settings, categories: o.categories, logs: o.logs, undo: [] };
-    st.settings.card = st.settings.card || { payDay: 15, cutoffDay: 31 };
-    st.logs.forEach(function (l) { l.id = l.id || uid(); l.method = l.method === '현금' ? '현금' : '카드'; l.installments = l.installments || 1; });
-    S = st; saveState(); return view();
-  },
-  resetAll: function () { S = null; try { localStorage.removeItem(KEY); } catch (e) {} MEM = null; return null; },
-  hasData: function () { return !!S; }
+  resetAll: function () { S = null; try { localStorage.removeItem(KEY); } catch (e) {} MEM = null; return null; }
 };
 
 S = loadState();
@@ -1198,12 +1172,20 @@ function catBlockHtml(c) {
       (lg.remaining < 0 ? '<span class="remain neg">초과 ' + fmt(-lg.remaining) + '원</span>' : '잔액 ' + fmt(lg.remaining) + '원') +
       (lg.placeholders ? ' · 임시 ' + lg.placeholders + '건 (여행지 확정 후 교체)' : '') + '</div>';
   }
-  var due = monthStatus(c.dueMonth);
-  html += '<div class="cat-due">' +
-    (due ? '📅 ' + esc(due.label) + (due.soon ? '<span class="soon">곧 결제 예정</span>' : '') : '<span class="due-empty">예정월 미설정</span>') +
-    ' <button class="due-edit" onclick="openDueModal(\'' + esc(c.name) + '\')">✎ 설정</button>' +
-    ' <button class="due-edit del" onclick="deleteCategoryConfirm(\'' + esc(c.name) + '\')">🗑 삭제</button>' +
-    '</div>';
+  var pays = STATE.logs.filter(function (l) { return l.category === c.name; });
+  if (pays.length) {
+    var dates = pays.map(function (l) { return l.date; }).sort();
+    html += '<div class="cat-due">🧾 결제 ' + pays.length + '건 · ' + Number(dates[0].slice(5, 7)) + '/' + Number(dates[0].slice(8, 10)) +
+      (pays.length > 1 ? ' ~ ' + Number(dates[dates.length - 1].slice(5, 7)) + '/' + Number(dates[dates.length - 1].slice(8, 10)) : '') +
+      ' <button class="due-edit del" onclick="deleteCategoryConfirm(\'' + esc(c.name) + '\')">🗑 삭제</button></div>';
+  } else {
+    var due = monthStatus(c.dueMonth);
+    html += '<div class="cat-due">' +
+      (due ? '📅 ' + esc(due.label) + (due.soon ? '<span class="soon">곧 결제 예정</span>' : '') : '<span class="due-empty">예정월 미설정</span>') +
+      ' <button class="due-edit" onclick="openDueModal(\'' + esc(c.name) + '\')">✎ 설정</button>' +
+      ' <button class="due-edit del" onclick="deleteCategoryConfirm(\'' + esc(c.name) + '\')">🗑 삭제</button>' +
+      '</div>';
+  }
   html += '</div>';
   return html;
 }
@@ -1363,7 +1345,7 @@ function renderUnified() {
         label = itemLabel(label, g.cat);
         html += '<div class="cf-item"><div class="cf-item-top"><span class="cf-name">' + esc(label) + '</span>' +
           '<span class="cf-amt">' + fmt(it.amount) + '원</span></div><div class="cf-meta">' +
-          '<span class="chip ' + (it.kind === 'card' ? 'card' : '') + '">' + esc(it.method || (it.kind === 'card' ? 'KE' : '현금')) + '</span>' +
+          '<span class="chip ' + (it.kind === 'card' ? 'card' : '') + '">' + esc(it.method || (it.kind === 'card' ? '카드' : '현금')) + '</span>' +
           (it.inst ? '<span class="chip">할부 ' + esc(it.inst) + '</span>' : '') +
           (it.done ? '<span class="chip">완료</span>' : '') +
           (lg && String(lg.memo).indexOf('여행지 확정 후 입력') !== -1 ? '<span class="chip">임시</span>' : '') +
@@ -1413,11 +1395,6 @@ function render() {
   }
 
   html += renderUnified();
-
-  html += '<hr class="solid">';
-  html += '<div class="section-label">WHAT-IF SIMULATOR</div>';
-  html += '<div class="cta-note">특정 항목에 예산보다 더 쓰게 되면, 다른 조정가능(ADJ) 항목에서 잔여예산 비율만큼 줄이는 안을 계산해드려요.</div>';
-  html += '<button class="btn stamp" onclick="openSimModal()">▸ RUN SIMULATION</button>';
 
   html += '<hr class="solid">';
   var paidLogs = STATE.logs.filter(function (l) { return l.status !== 'scheduled'; });
@@ -1605,52 +1582,7 @@ function submitExpense() {
   else call.addExpense(entry);
 }
 
-// ── 시뮬레이터 ──
-function openSimModal() {
-  populateCategorySelect('simCategory');
-  document.getElementById('simExtra').value = '';
-  document.getElementById('simResult').innerHTML = '';
-  openModal('simModal');
-}
 
-function runSimulation() {
-  var targetName = document.getElementById('simCategory').value;
-  var extra = Number(document.getElementById('simExtra').value);
-  var resultEl = document.getElementById('simResult');
-  if (!targetName || !extra || extra <= 0) {
-    resultEl.innerHTML = '<div class="sim-warn">추가 지출액을 입력해주세요.</div>';
-    return;
-  }
-
-  var others = STATE.categories.filter(function (c) { return c.name !== targetName && c.adjustable; });
-  var pool = others.reduce(function (sum, c) { return sum + Math.max(0, c.remaining); }, 0);
-
-  var html = '<div class="cta-note">' +
-    esc(targetName) + '에 ' + fmt(extra) + '원 더 쓰면, 총예산을 지키기 위해 다른 ADJ 항목의 잔여예산 비율만큼 줄이는 안이에요.</div>';
-
-  if (pool <= 0) {
-    html += '<div class="sim-warn">조정 가능한 다른 항목에 남은 예산이 없어요. 총예산 자체를 늘리는 걸 고려해야 해요.</div>';
-    resultEl.innerHTML = html;
-    return;
-  }
-
-  if (extra > pool) {
-    html += '<div class="sim-warn">조정 가능한 항목들의 잔여예산 합계(' + fmt(pool) + '원)보다 초과분이 더 커요. 부족분 ' + fmt(extra - pool) + '원은 총예산을 늘리거나 다른 방식으로 메워야 해요.</div>';
-  }
-
-  var applied = Math.min(extra, pool);
-  others.forEach(function (c) {
-    var share = pool > 0 ? Math.max(0, c.remaining) / pool : 0;
-    var cut = Math.round(applied * share);
-    var newBudget = c.budget - cut;
-    html += '<div class="sim-row"><div><div class="sim-name">' + esc(c.name) + '</div>' +
-      '<div class="sim-change cut">-' + fmt(cut) + '원 조정</div></div>' +
-      '<div style="text-align:right"><div>' + fmt(newBudget) + '원</div>' +
-      '<div class="sim-change">기존 ' + fmt(c.budget) + '원</div></div></div>';
-  });
-
-  resultEl.innerHTML = html;
-}
 
 // ── 예정월 설정 ──
 function openDueModal(categoryName) {
@@ -1730,27 +1662,45 @@ function deleteCategoryConfirm(name) {
 }
 
 // ── 항목 추가 ──
+var newCatBillingTouched = false;
+
 function openAddCategoryModal() {
-  document.getElementById('newCatName').value = '';
-  document.getElementById('newCatBudget').value = '';
+  newCatBillingTouched = false;
+  ['newCatName', 'newCatBudget', 'newCatMemo', 'newCatDueMonth', 'newCatDate', 'newCatBilling'].forEach(function (id) { document.getElementById(id).value = ''; });
   document.getElementById('newCatAdjustable').value = 'true';
-  document.getElementById('newCatMemo').value = '';
-  document.getElementById('newCatDueMonth').value = '';
+  document.getElementById('newCatMethod').value = '카드';
+  document.getElementById('newCatInst').value = 1;
   document.getElementById('addCatMsg').textContent = '';
+  onNewCatDate();
   openModal('addCategoryModal');
+}
+
+// 결제일을 넣으면 결제 정보 칸을 보여주고 예정월 칸은 숨긴다 (결제일이 곧 예정)
+function onNewCatDate() {
+  var d = document.getElementById('newCatDate').value;
+  document.getElementById('newCatPay').style.display = d ? 'block' : 'none';
+  document.getElementById('newCatDueRow').style.display = d ? 'none' : 'block';
+  document.getElementById('newCatBudgetLabel').textContent = d ? '결제 금액(원)' : '예산(원)';
+  onNewCatMethod();
+}
+
+function onNewCatMethod() {
+  var d = document.getElementById('newCatDate').value;
+  var isCard = document.getElementById('newCatMethod').value !== '현금';
+  document.getElementById('newCatCard').style.display = d && isCard ? 'block' : 'none';
+  if (d && isCard && !newCatBillingTouched) document.getElementById('newCatBilling').value = nextBilling(d);
 }
 
 function submitAddCategory() {
   var name = document.getElementById('newCatName').value.trim();
   var budget = document.getElementById('newCatBudget').value;
+  var date = document.getElementById('newCatDate').value;
   var msg = document.getElementById('addCatMsg');
   if (!name || budget === '' || Number(budget) < 0) {
-    msg.textContent = '항목 이름과 예산을 확인해주세요.';
+    msg.textContent = '항목 이름과 ' + (date ? '결제 금액' : '예산') + '을 확인해주세요.';
     msg.className = 'form-msg err';
     return;
   }
-  msg.textContent = '추가 중...';
-  msg.className = 'form-msg';
   var entry = {
     name: name,
     budget: budget,
@@ -1758,6 +1708,19 @@ function submitAddCategory() {
     memo: document.getElementById('newCatMemo').value,
     dueMonth: document.getElementById('newCatDueMonth').value
   };
+  if (date) {
+    var method = document.getElementById('newCatMethod').value;
+    var billing = document.getElementById('newCatBilling').value;
+    if (!(Number(budget) > 0)) { msg.textContent = '결제 금액을 입력해주세요.'; msg.className = 'form-msg err'; return; }
+    if (method !== '현금' && !billing) { msg.textContent = '카드 청구일을 입력해주세요.'; msg.className = 'form-msg err'; return; }
+    entry.payDate = date;
+    entry.payAmount = budget;
+    entry.payMethod = method;
+    entry.payBilling = method !== '현금' ? billing : '';
+    entry.payInst = method !== '현금' ? document.getElementById('newCatInst').value : 1;
+  }
+  msg.textContent = '추가 중...';
+  msg.className = 'form-msg';
   google.script.run.withSuccessHandler(function (data) {
     adopt(data);
     render();
@@ -1770,7 +1733,7 @@ function submitAddCategory() {
   }).addCategory(entry);
 }
 
-// ── 시작하기 / 설정 / 백업 ──
+// ── 시작하기 / 설정 ──
 function openOnboarding() { document.getElementById('onbMsg').textContent = ''; openModal('onbModal'); }
 
 function startOnb(mode) {
@@ -1828,27 +1791,11 @@ function saveFile(name, mime, text) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
-function downloadJson() {
-  google.script.run.withSuccessHandler(function (txt) { saveFile('wedding-budget-' + window.WB.todayStr() + '.json', 'application/json', txt); }).exportData();
-}
 function downloadCsv() {
   google.script.run.withSuccessHandler(function (txt) { saveFile('wedding-budget-' + window.WB.todayStr() + '.csv', 'text/csv;charset=utf-8', txt); }).exportCsv();
 }
-function importFileUI(input) {
-  var f = input.files && input.files[0];
-  if (!f) return;
-  var r = new FileReader();
-  r.onload = function () {
-    if (window.WB.api.hasData() && !confirm('지금 데이터를 이 파일 내용으로 바꿀까요? (현재 데이터는 사라져요 — 먼저 백업을 받아 두세요)')) { input.value = ''; return; }
-    google.script.run.withSuccessHandler(function (data) {
-      closeModal('settingsModal'); closeModal('onbModal'); onData(data);
-    }).withFailureHandler(function (e) { alert('불러오기 실패: ' + e.message); }).importData(String(r.result));
-    input.value = '';
-  };
-  r.readAsText(f);
-}
 function resetAllUI() {
-  if (!confirm('이 기기의 모든 데이터를 지울까요? 되돌릴 수 없어요. 먼저 백업을 받아 두는 걸 추천해요.')) return;
+  if (!confirm('이 기기의 모든 데이터를 지울까요? 되돌릴 수 없어요. 필요하면 먼저 CSV로 내보내 두세요.')) return;
   google.script.run.withSuccessHandler(function () { closeModal('settingsModal'); STATE = null; document.getElementById('app').innerHTML = ''; openOnboarding(); }).resetAll();
 }
 
