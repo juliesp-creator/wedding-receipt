@@ -1562,7 +1562,7 @@ function emptyMonth(key, currentKey) {
   return {
     key: key, total: 0, card: 0, cash: 0, items: [], planned: [],
     label: (String(y) !== String(new Date().getFullYear()) ? "'" + key.slice(2, 4) + ' ' : '') + mm + '월',
-    range: '급여기간 ' + prevM + '/26~' + mm + '/25', current: key === currentKey
+    range: '', current: key === currentKey
   };
 }
 
